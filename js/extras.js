@@ -1,12 +1,8 @@
-/* ============================================================
-   extras.js · 打字机 / 3D倾斜辉光 / Lightbox / 筛选 / 手风琴
-   ============================================================ */
 (function () {
   'use strict';
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer = window.matchMedia('(pointer: fine)').matches;
 
-  /* ---------- 打字机 ---------- */
   document.querySelectorAll('[data-typewriter]').forEach(function (el) {
     var phrases = (el.getAttribute('data-phrases') || '').split('|').filter(Boolean);
     if (!phrases.length) return;
@@ -27,7 +23,6 @@
     type();
   });
 
-  /* ---------- 3D 倾斜 + 辉光追踪 ---------- */
   if (finePointer && !reduceMotion) {
     document.querySelectorAll('.tilt').forEach(function (card) {
       card.classList.add('tilt-glow');
@@ -46,7 +41,6 @@
     });
   }
 
-  /* ---------- 手风琴 ---------- */
   var accItems = document.querySelectorAll('.acc-item');
   accItems.forEach(function (item) {
     if (item.classList.contains('open')) {
@@ -84,7 +78,6 @@
     });
   });
 
-  /* ---------- 荣誉筛选 ---------- */
   var chips = document.querySelectorAll('.filter-bar .chip');
   var hcMount = document.querySelector('.hcarousel-mount');
   var honorGrid = document.querySelector('.honor-grid');
@@ -108,7 +101,6 @@
     });
   }
 
-  /* ---------- 荣誉 3D 旋转木马（全部荣誉视图，由荣誉卡数据构建） ---------- */
   (function () {
     if (!hcMount || !honorGrid) return;
     var cards = Array.prototype.slice.call(honorGrid.querySelectorAll('.honor-card'));
@@ -198,7 +190,7 @@
     var endDrag = function () { dragging = false; };
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('pointercancel', endDrag);
-    /* 拖拽后拦截 click，避免误触灯箱 */
+    
     stage.addEventListener('click', function (e) {
       if (moved > 6) { e.preventDefault(); e.stopPropagation(); }
       moved = 0;
@@ -207,7 +199,6 @@
     applyHonorFilter('all');
   })();
 
-  /* ---------- Lightbox ---------- */
   var lb, lbImg, lbCap, lbList = [], lbIndex = 0;
   function buildLightbox() {
     lb = document.createElement('div');

@@ -1,10 +1,6 @@
-/* ============================================================
-   main.js · 导航、滚动显现、计数器、进度条、Toast
-   ============================================================ */
 (function () {
   'use strict';
 
-  /* ---------- 导航滚动状态 + 进度条 ---------- */
   var nav = document.querySelector('.nav');
   var progress = document.querySelector('.scroll-progress');
   function onScroll() {
@@ -17,7 +13,6 @@
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  /* ---------- 移动端菜单 ---------- */
   var toggle = document.querySelector('.nav-toggle');
   var links = document.querySelector('.nav-links');
   if (toggle && links) {
@@ -33,7 +28,6 @@
     });
   }
 
-  /* ---------- 滚动显现 ---------- */
   var revealEls = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (entries) {
@@ -46,7 +40,6 @@
     revealEls.forEach(function (el) { el.classList.add('in'); });
   }
 
-  /* ---------- 数字计数 ---------- */
   function animateCount(el) {
     var target = parseFloat(el.getAttribute('data-count')) || 0;
     var dec = parseInt(el.getAttribute('data-decimals') || '0', 10);
@@ -71,7 +64,6 @@
     counters.forEach(function (el) { cio.observe(el); });
   }
 
-  /* ---------- Toast ---------- */
   var toast;
   window.QN = window.QN || {};
   window.QN.toast = function (msg) {
@@ -86,7 +78,6 @@
     toast._t = setTimeout(function () { toast.classList.remove('show'); }, 2000);
   };
 
-  /* ---------- 复制群号 ---------- */
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.copy-btn');
     if (!btn) return;
@@ -104,7 +95,6 @@
     }
   });
 
-  /* ---------- 页脚年份 ---------- */
   var yearEl = document.querySelector('.js-year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 })();

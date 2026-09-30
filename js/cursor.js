@@ -1,17 +1,8 @@
-/* ============================================================
-   cursor.js · 高级光标系统
-   - 三层光标：外发光光环(aura) + 磁吸跟随环(ring) + 核心光点(dot)
-   - 移动拖尾粒子
-   - 悬停可交互元素时环被磁吸到元素中心、放大并变色
-   - 点击：彩色粒子迸发 + 三层同心冲击波 + 环收缩回弹
-   纯手工实现，零依赖。触摸设备 / reduced-motion 自动降级。
-   ============================================================ */
 (function () {
   'use strict';
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer = window.matchMedia('(pointer: fine)').matches;
 
-  /* ---------- 粒子画布 ---------- */
   var canvas = document.createElement('canvas');
   canvas.id = 'fx-canvas';
   Object.assign(canvas.style, {
@@ -34,14 +25,15 @@
   var COLORS = ['#A8E063', '#9BE15D', '#00E5FF', '#83F1FF', '#FFC845', '#7CFFB2'];
   var particles = [];
   var limes = [];
+  var PARTICLE_MAX = 220;   
+  var LIME_MAX = 8;         
 
   function rand(a, b) { return a + Math.random() * (b - a); }
 
-  /* ---------- 青柠切片点击效果（手绘 Canvas 青柠横截面） ---------- */
   function spawnLime(x, y) {
     if (reduceMotion) return;
     limes.push({ x: x, y: y, rot: rand(-0.7, 0.7), tilt: rand(0.82, 0.95), r: rand(15, 21), age: 0 });
-    if (limes.length > 12) limes.shift();
+    if (limes.length > LIME_MAX) limes.splice(0, limes.length - LIME_MAX);
   }
 
   function drawLime(s) {
@@ -55,16 +47,16 @@
     ctx.rotate(s.rot + s.age * 0.22);
     ctx.scale(1, s.tilt);
     ctx.globalAlpha = Math.max(fade, 0) * ease;
-    // 果皮外圈（暗绿）
+    
     ctx.beginPath(); ctx.fillStyle = '#3f8f2a';
     ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-    // 果皮内环（青绿）
+    
     ctx.beginPath(); ctx.fillStyle = '#7cc74f';
     ctx.arc(0, 0, r * 0.88, 0, Math.PI * 2); ctx.fill();
-    // 果肉底（浅青黄）
+    
     ctx.beginPath(); ctx.fillStyle = '#d9f2a6';
     ctx.arc(0, 0, r * 0.78, 0, Math.PI * 2); ctx.fill();
-    // 果瓣层次
+    
     ctx.fillStyle = 'rgba(168,224,99,0.5)';
     for (var j = 0; j < 8; j++) {
       var a0 = j / 8 * Math.PI * 2 + 0.07, a1 = (j + 1) / 8 * Math.PI * 2 - 0.07;
@@ -73,7 +65,7 @@
       ctx.arc(0, 0, r * 0.7, a0, a1);
       ctx.closePath(); ctx.fill();
     }
-    // 果瓣分隔线
+    
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
     ctx.lineWidth = Math.max(r * 0.045, 0.8);
     for (var i = 0; i < 8; i++) {
@@ -83,7 +75,7 @@
       ctx.lineTo(Math.cos(a) * r * 0.75, Math.sin(a) * r * 0.75);
       ctx.stroke();
     }
-    // 中心白芯
+    
     ctx.beginPath(); ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.arc(0, 0, r * 0.1, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
@@ -107,7 +99,7 @@
         kind: Math.random() < 0.28 ? 'spark' : 'dot'
       });
     }
-    // 中心闪光
+    
     particles.push({ x: x, y: y, vx: 0, vy: 0, size: 6, life: 1, decay: 0.06, color: '#ffffff', kind: 'flash' });
   }
 
@@ -122,26 +114,29 @@
       if (p.life <= 0) { particles.splice(i, 1); continue; }
       ctx.globalAlpha = Math.max(p.life, 0);
       ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
       if (p.kind === 'spark') {
-        ctx.shadowBlur = 16;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * p.life * 0.6, 0, Math.PI * 2);
         ctx.fill();
+        ctx.shadowBlur = 0;
       } else if (p.kind === 'flash') {
-        ctx.shadowBlur = 30;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 24;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * (1 + (1 - p.life) * 6), 0, Math.PI * 2);
         ctx.fill();
+        ctx.shadowBlur = 0;
       } else {
-        ctx.shadowBlur = 12;
+        
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
         ctx.fill();
       }
     }
     ctx.globalAlpha = 1; ctx.shadowBlur = 0;
-    // 青柠切片（在粒子之上绘制）
+    
     for (var li = limes.length - 1; li >= 0; li--) {
       var s = limes[li];
       s.age += 0.016;
@@ -152,22 +147,45 @@
   }
   requestAnimationFrame(tick);
 
-  /* ---------- 多层冲击波 ---------- */
-  function shockwaves(x, y) {
-    if (reduceMotion) return;
-    ['r1', 'r2', 'r3'].forEach(function (cls, idx) {
-      setTimeout(function () {
+  var ripplePool = [];
+  var rippleInited = false;
+  function initRipplePool() {
+    if (rippleInited) return;
+    rippleInited = true;
+    
+    ['r1', 'r2', 'r3'].forEach(function (cls) {
+      for (var i = 0; i < 3; i++) {
         var el = document.createElement('span');
         el.className = 'click-ripple ' + cls;
+        el.style.display = 'none';
+        document.body.appendChild(el);
+        ripplePool.push({ el: el, busy: false });
+      }
+    });
+  }
+
+  function shockwaves(x, y) {
+    if (reduceMotion) return;
+    initRipplePool();
+    ['r1', 'r2', 'r3'].forEach(function (cls, idx) {
+      
+      var slot = null;
+      for (var i = 0; i < ripplePool.length; i++) {
+        if (!ripplePool[i].busy && ripplePool[i].el.className.indexOf(cls) !== -1) { slot = ripplePool[i]; break; }
+      }
+      if (!slot) return;   
+      slot.busy = true;
+      setTimeout(function () {
+        var el = slot.el;
         el.style.left = x + 'px';
         el.style.top = y + 'px';
-        document.body.appendChild(el);
-        setTimeout(function () { el.remove(); }, 820);
+        el.style.display = 'block';
+        el.classList.remove('click-ripple'); void el.offsetWidth; el.classList.add('click-ripple'); 
+        setTimeout(function () { el.style.display = 'none'; slot.busy = false; }, 820);
       }, idx * 60);
     });
   }
 
-  /* ---------- 自定义光标（仅鼠标设备） ---------- */
   var dot, ring, aura;
   var trails = [];
   var TRAIL_MAX = 10;
@@ -192,22 +210,21 @@
       }
 
       var mx = -100, my = -100;
-      var rx = -100, ry = -100;      // ring 目标（磁吸后）
-      var ax = -100, ay = -100;      // aura
-      var dx = -100, dy = -100;      // dot（略带动量）
-      var magnet = null;             // 当前磁吸目标元素
+      var rx = -100, ry = -100;      
+      var ax = -100, ay = -100;      
+      var dx = -100, dy = -100;      
+      var magnet = null;             
 
       window.addEventListener('mousemove', function (e) {
         mx = e.clientX; my = e.clientY;
       }, { passive: true });
 
       function loop() {
-        // dot：轻微平滑跟随
+        
         dx += (mx - dx) * 0.55;
         dy += (my - dy) * 0.55;
         dot.style.transform = 'translate(' + dx + 'px,' + dy + 'px) translate(-50%,-50%)';
 
-        // ring：磁吸到元素中心，否则跟随鼠标（带延迟）
         if (magnet) {
           var r = magnet.getBoundingClientRect();
           var tx = r.left + r.width / 2;
@@ -220,12 +237,10 @@
         }
         ring.style.transform = 'translate(' + rx + 'px,' + ry + 'px) translate(-50%,-50%)';
 
-        // aura：最慢跟随
         ax += (mx - ax) * 0.06;
         ay += (my - ay) * 0.06;
         aura.style.transform = 'translate(' + ax + 'px,' + ay + 'px) translate(-50%,-50%)';
 
-        // 拖尾
         var prevX = dx, prevY = dy;
         for (var i = 0; i < trails.length; i++) {
           var tr = trails[i];
@@ -262,7 +277,7 @@
       });
       window.addEventListener('mousedown', function () {
         ring.classList.add('pressing');
-        // 按下时额外迸射少量粒子
+        
         burst(mx, my, 8);
       });
       window.addEventListener('mouseup', function () { ring.classList.remove('pressing'); });
@@ -275,7 +290,6 @@
     });
   }
 
-  /* ---------- 点击 / 触摸事件 ---------- */
   document.addEventListener('click', function (e) {
     burst(e.clientX, e.clientY);
     shockwaves(e.clientX, e.clientY);

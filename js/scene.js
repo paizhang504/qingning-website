@@ -1,12 +1,3 @@
-/* ============================================================
-   scene.js · 全站背景星场（粒子漂移增强版）
-   data-scene="dense"(首页) / "lite"(内页)
-   - 粒子沿统一方向漂移（带个体抖动），星点闪烁
-   - 近距粒子网状连线，透明度随距离衰减
-   - 鼠标悬停：半径内粒子平滑点亮，并与鼠标连线
-   - dense 模式额外含电路节点脉冲与鼠标视差
-   纯手工 Canvas 2D，零依赖。
-   ============================================================ */
 (function () {
   'use strict';
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,11 +20,10 @@
     var mouse = { x: -9999, y: -9999 };
     var running = true;
 
-    /* 统一漂移方向（约 34°，向右下缓缓流动） */
     var DIR = 34 * Math.PI / 180;
-    /* 连线与悬停参数 */
-    var LINK_D = dense ? 230 : 170;      // 粒子间连线距离(px)
-    var HOVER_R = dense ? 280 : 220;     // 鼠标点亮半径(px)
+    
+    var LINK_D = dense ? 230 : 170;      
+    var HOVER_R = dense ? 280 : 220;     
     var LINK2 = LINK_D * LINK_D;
 
     function resize() {
@@ -46,9 +36,9 @@
     function seed() {
       var area = W * H;
       var base = dense ? 8000 : 16000;
-      var count = Math.round(area / base);
+      var count = Math.round(area / base * 0.7);   
       if (isMobile) count = Math.round(count * 0.55);
-      count = Math.max(dense ? 80 : 40, Math.min(count, dense ? 400 : 150));
+      count = Math.max(dense ? 56 : 28, Math.min(count, dense ? 280 : 105));
       stars = [];
       for (var i = 0; i < count; i++) {
         var cyan = Math.random() < 0.22;
@@ -83,14 +73,12 @@
       var px = (mouse.x - W / 2) * 0.012, py = (mouse.y - H / 2) * 0.012;
       var hoverOn = mouse.x > -999 && !isMobile;
 
-      /* --- 更新 + 画粒子 --- */
       for (var i = 0; i < stars.length; i++) {
         var s = stars[i];
         s.x += s.vx; s.y += s.vy; s.tw += s.tws;
         if (s.x < -5) s.x = W + 5; if (s.x > W + 5) s.x = -5;
         if (s.y < -5) s.y = H + 5; if (s.y > H + 5) s.y = -5;
 
-        /* 悬停点亮（平滑过渡） */
         var target = 0;
         if (hoverOn) {
           var dxm = s.x - mouse.x, dym = s.y - mouse.y;
@@ -114,7 +102,6 @@
       }
       ctx.shadowBlur = 0;
 
-      /* --- 粒子间网状连线 --- */
       var linkBase = dense ? 0.15 : 0.08;
       for (var m = 0; m < stars.length; m++) {
         for (var n = m + 1; n < stars.length; n++) {
@@ -136,7 +123,6 @@
         }
       }
 
-      /* --- 鼠标与点亮粒子连线 --- */
       if (hoverOn) {
         for (var h = 0; h < stars.length; h++) {
           var st = stars[h];
@@ -149,7 +135,7 @@
             ctx.stroke();
           }
         }
-        /* 鼠标位置光晕 */
+        
         var grad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 90);
         grad.addColorStop(0, 'rgba(168,224,99,0.14)');
         grad.addColorStop(1, 'rgba(168,224,99,0)');
@@ -159,7 +145,6 @@
         ctx.fill();
       }
 
-      /* --- dense 模式：电路节点脉冲 --- */
       if (dense) {
         for (var q = 0; q < nodes.length; q++) {
           var nd = nodes[q]; nd.ph += 0.02;
