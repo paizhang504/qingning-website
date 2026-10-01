@@ -229,22 +229,22 @@
           var r = magnet.getBoundingClientRect();
           var tx = r.left + r.width / 2;
           var ty = r.top + r.height / 2;
-          rx += (tx - rx) * 0.45;
-          ry += (ty - ry) * 0.45;
+          rx += (tx - rx) * 0.6;
+          ry += (ty - ry) * 0.6;
         } else {
-          rx += (mx - rx) * 0.38;
-          ry += (my - ry) * 0.38;
+          rx += (mx - rx) * 0.55;
+          ry += (my - ry) * 0.55;
         }
         ring.style.transform = 'translate(' + rx + 'px,' + ry + 'px) translate(-50%,-50%)';
 
-        ax += (mx - ax) * 0.16;
-        ay += (my - ay) * 0.16;
+        ax += (mx - ax) * 0.24;
+        ay += (my - ay) * 0.24;
         aura.style.transform = 'translate(' + ax + 'px,' + ay + 'px) translate(-50%,-50%)';
 
         var prevX = dx, prevY = dy;
         for (var i = 0; i < trails.length; i++) {
           var tr = trails[i];
-          var ease = 0.55 - i * 0.035;
+          var ease = 0.7 - i * 0.04;
           tr.x += (prevX - tr.x) * ease;
           tr.y += (prevY - tr.y) * ease;
           tr.el.style.transform = 'translate(' + tr.x + 'px,' + tr.y + 'px) translate(-50%,-50%)';

@@ -162,7 +162,9 @@
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var DEG_PER_SEC = reduceMotion ? 0 : 6;
 
+    var hcActive = false, hcRunning = false;
     function draw(now) {
+      if (!hcActive) { hcRunning = false; return; }
       var dt = last ? (now - last) / 1000 : 0;
       last = now;
       var f = Math.min(dt, 0.1);
@@ -173,7 +175,10 @@
       ringEl.style.transform = 'translateZ(' + (-radius) + 'px) rotateY(' + rotY + 'deg)';
       requestAnimationFrame(draw);
     }
-    requestAnimationFrame(draw);
+    new IntersectionObserver(function (entries) {
+      hcActive = entries[0].isIntersecting;
+      if (hcActive && !hcRunning) { hcRunning = true; last = 0; requestAnimationFrame(draw); }
+    }).observe(hcMount);
 
     stage.addEventListener('pointerdown', function (e) {
       dragging = true; dragX = e.clientX; moved = 0; vel = 0;
@@ -294,7 +299,9 @@
     return Math.round(mod(target, totalW) / step) % n;
   }
 
+  var tgActive = false, tgRunning = false;
   function frame(now) {
+    if (!tgActive) { tgRunning = false; return; }
     var dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016;
     last = now;
     if (!dragging && !interacted && AUTO && !document.hidden) {
@@ -378,5 +385,8 @@
   });
 
   measure();
-  requestAnimationFrame(frame);
+  new IntersectionObserver(function (entries) {
+    tgActive = entries[0].isIntersecting;
+    if (tgActive && !tgRunning) { tgRunning = true; last = 0; requestAnimationFrame(frame); }
+  }).observe(root);
 })();
