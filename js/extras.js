@@ -236,7 +236,9 @@
     e.preventDefault();
     if (!lb) buildLightbox();
     var group = trig.getAttribute('data-group') || 'default';
-    lbList = Array.prototype.slice.call(document.querySelectorAll('[data-lightbox][data-group="' + group + '"]')).map(function (el) {
+    lbList = Array.prototype.slice.call(document.querySelectorAll('[data-lightbox][data-group="' + group + '"]')).filter(function (el) {
+      return el.offsetParent !== null;
+    }).map(function (el) {
       var img = el.querySelector('img');
       return {
         src: el.getAttribute('data-full') || (img ? img.src : ''),
