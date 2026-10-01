@@ -221,30 +221,30 @@
 
       function loop() {
         
-        dx += (mx - dx) * 0.55;
-        dy += (my - dy) * 0.55;
+        dx = mx;
+        dy = my;
         dot.style.transform = 'translate(' + dx + 'px,' + dy + 'px) translate(-50%,-50%)';
 
         if (magnet) {
           var r = magnet.getBoundingClientRect();
           var tx = r.left + r.width / 2;
           var ty = r.top + r.height / 2;
-          rx += (tx - rx) * 0.22;
-          ry += (ty - ry) * 0.22;
+          rx += (tx - rx) * 0.45;
+          ry += (ty - ry) * 0.45;
         } else {
-          rx += (mx - rx) * 0.16;
-          ry += (my - ry) * 0.16;
+          rx += (mx - rx) * 0.38;
+          ry += (my - ry) * 0.38;
         }
         ring.style.transform = 'translate(' + rx + 'px,' + ry + 'px) translate(-50%,-50%)';
 
-        ax += (mx - ax) * 0.06;
-        ay += (my - ay) * 0.06;
+        ax += (mx - ax) * 0.16;
+        ay += (my - ay) * 0.16;
         aura.style.transform = 'translate(' + ax + 'px,' + ay + 'px) translate(-50%,-50%)';
 
         var prevX = dx, prevY = dy;
         for (var i = 0; i < trails.length; i++) {
           var tr = trails[i];
-          var ease = 0.32 - i * 0.022;
+          var ease = 0.55 - i * 0.035;
           tr.x += (prevX - tr.x) * ease;
           tr.y += (prevY - tr.y) * ease;
           tr.el.style.transform = 'translate(' + tr.x + 'px,' + tr.y + 'px) translate(-50%,-50%)';
