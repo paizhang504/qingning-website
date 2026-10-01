@@ -260,3 +260,123 @@
     if (e.key === 'ArrowRight') move(1);
   });
 })();
+
+(function () {
+  var root = document.getElementById('teacherGallery');
+  if (!root) return;
+  var viewport = root.querySelector('.tgal-viewport');
+  var cards = Array.prototype.slice.call(root.querySelectorAll('.tgal-card'));
+  var n = cards.length;
+  if (n < 2) return;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var step = 250, totalW = step * n, H = 600, B = 160, R = 1200;
+  var cardW = 212;
+  function measure() {
+    var mobile = window.matchMedia('(max-width:860px)').matches;
+    cardW = mobile ? 150 : 212;
+    step = mobile ? 178 : 250;
+    totalW = step * n;
+    H = viewport.clientWidth / 2;
+    B = H * Math.tan(14 * Math.PI / 180);
+    R = (H * H + B * B) / (2 * B);
+    target = ((target % totalW) + totalW) % totalW;
+  }
+
+  var current = 0, target = 0, last = 0;
+  var dragging = false, moved = 0, startX = 0, startScroll = 0, idleAt = 0;
+  var interacted = false;
+  var AUTO = reduceMotion ? 0 : 6;
+
+  function mod(v, m) { return ((v % m) + m) % m; }
+
+  function centerIndex() {
+    return Math.round(mod(target, totalW) / step) % n;
+  }
+
+  function frame(now) {
+    var dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016;
+    last = now;
+    if (!dragging && !interacted && AUTO && !document.hidden) {
+      target += AUTO * dt * 6;
+    }
+    current += (target - current) * 0.09;
+    if (Math.abs(target - current) < 0.05) current = target;
+
+    var s = mod(current, totalW);
+    var ci = centerIndex();
+    for (var i = 0; i < n; i++) {
+      var cx = mod(i * step - s + totalW / 2, totalW) - totalW / 2;
+      var eff = Math.min(Math.abs(cx), H);
+      var arc = R - Math.sqrt(Math.max(R * R - eff * eff, 0));
+      var y = -arc;
+      var deg = -Math.sign(cx) * Math.asin(Math.min(eff / R, 1)) * 180 / Math.PI;
+      var depth = Math.min(eff / H, 1);
+      var sc = 1 - 0.15 * depth;
+      var screenX = cx + H;
+      var visible = Math.abs(cx) < H + cardW;
+      var card = cards[i];
+      card.style.transform = 'translate3d(' + screenX.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0) translate(-50%,-50%) rotate(' + deg.toFixed(2) + 'deg) scale(' + sc.toFixed(3) + ')';
+      card.style.zIndex = String(100 - Math.round(eff));
+      card.style.visibility = visible ? 'visible' : 'hidden';
+      card.classList.toggle('is-center', i === ci);
+      card.classList.toggle('is-near', i !== ci && depth < 0.62);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function nudge(dir) {
+    interacted = true;
+    target = Math.round(current / step) * step + dir * step;
+  }
+
+  var prevBtn = root.querySelector('.tgal-prev');
+  var nextBtn = root.querySelector('.tgal-next');
+  if (prevBtn) prevBtn.addEventListener('click', function (e) { e.stopPropagation(); nudge(-1); });
+  if (nextBtn) nextBtn.addEventListener('click', function (e) { e.stopPropagation(); nudge(1); });
+
+  viewport.addEventListener('pointerdown', function (e) {
+    interacted = true;
+    dragging = true; moved = 0; startX = e.clientX; startScroll = target;
+    viewport.classList.add('grabbing');
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - startX;
+    moved = Math.max(moved, Math.abs(dx));
+    target = startScroll - dx * 1.35;
+  });
+  window.addEventListener('pointerup', function (e) {
+    if (!dragging) return;
+    dragging = false;
+    viewport.classList.remove('grabbing');
+    target = Math.round(target / step) * step;
+  });
+
+  cards.forEach(function (card, i) {
+    card.addEventListener('click', function () {
+      if (moved > 6) return;
+      interacted = true;
+      var s = mod(current, totalW);
+      var cx = mod(i * step - s + totalW / 2, totalW) - totalW / 2;
+      target = current + cx;
+    });
+  });
+
+  viewport.addEventListener('wheel', function (e) {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) && !e.shiftKey) return;
+    e.preventDefault();
+    interacted = true;
+    var d = e.shiftKey ? e.deltaY : e.deltaX;
+    target += d * 0.9;
+  }, { passive: false });
+
+  var resizeT;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(measure, 150);
+  });
+
+  measure();
+  requestAnimationFrame(frame);
+})();
